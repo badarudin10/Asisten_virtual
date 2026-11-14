@@ -2,39 +2,32 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hologram AI Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Agent Hologram Interface</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* Latar belakang futuristik */
-    body {
-      background: radial-gradient(circle at center, #0a192f 0%, #020617 100%);
-      overflow-x: hidden;
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      background: radial-gradient(circle at 50% 42%, #0b2545 0%, #030712 75%, #000000 100%);
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
-    /* Efek melayang manusia hologram */
-    @keyframes floatHologram {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-10px) rotate(0.8deg); }
-    }
-    .hologram-float {
-      animation: floatHologram 4s ease-in-out infinite;
-    }
-
-    /* Efek kedipan sinyal hologram */
-    @keyframes holoFlicker {
-      0%, 100% { opacity: 0.95; }
-      92% { opacity: 0.95; }
-      93% { opacity: 0.6; }
-      94% { opacity: 0.95; }
-      96% { opacity: 0.75; }
-      97% { opacity: 0.95; }
-    }
-    .holo-flicker {
-      animation: holoFlicker 6s infinite;
+    /* Efek Garis Scanline Layar Hologram */
+    .scanlines {
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(34, 211, 238, 0.05) 50%
+      );
+      background-size: 100% 4px;
     }
 
-    /* Cincin proyektor berputar */
+    /* Animasi Cincin Pemindai Wajah */
     @keyframes spinSlow {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
@@ -43,287 +36,456 @@
       from { transform: rotate(360deg); }
       to { transform: rotate(0deg); }
     }
-    .ring-spin {
-      transform-origin: 150px 150px;
-      animation: spinSlow 18s linear infinite;
+    .ring-cw {
+      transform-origin: 200px 200px;
+      animation: spinSlow 24s linear infinite;
     }
-    .ring-spin-reverse {
-      transform-origin: 150px 150px;
-      animation: spinReverse 12s linear infinite;
+    .ring-ccw {
+      transform-origin: 200px 200px;
+      animation: spinReverse 16s linear infinite;
     }
 
-    /* Animasi Kedip Mata */
+    /* Animasi Aktif Hanya Saat Merespon Suara */
+    @keyframes headRespond {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      25% { transform: translate(-3px, -4px) scale(1.015); }
+      50% { transform: translate(2px, -2px) scale(1.02); }
+      75% { transform: translate(-1px, 3px) scale(1.01); }
+    }
+    .face-active {
+      animation: headRespond 2.2s ease-in-out infinite;
+    }
+
+    /* Kedip Mata */
     .eyelid {
-      transform-origin: center;
-      transition: transform 0.1s ease-in-out;
+      transition: transform 0.09s ease-in-out;
     }
     .blink {
-      transform: scaleY(0.08);
+      transform: scaleY(0.05);
     }
 
-    /* Animasi Mulut Berbicara (Lip Sync) */
-    @keyframes mouthTalk {
-      0% { transform: scaleY(0.2); }
-      25% { transform: scaleY(1.3); }
-      50% { transform: scaleY(0.5); }
-      75% { transform: scaleY(1.5); }
-      100% { transform: scaleY(0.3); }
+    /* Animasi Bibir & Equalizer Suara Saat Bicara */
+    @keyframes lipSync {
+      0% { transform: scaleY(0.25) scaleX(0.95); }
+      30% { transform: scaleY(1.4) scaleX(1.05); }
+      60% { transform: scaleY(0.6) scaleX(0.98); }
+      100% { transform: scaleY(1.6) scaleX(1.08); }
     }
-    .talking-mouth {
-      transform-origin: 150px 178px;
-      animation: mouthTalk 0.28s infinite alternate;
-    }
-
-    /* Garis Scanline Hologram */
-    .scanlines {
-      background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 255, 255, 0.08) 50%
-      );
-      background-size: 100% 4px;
+    .lip-talking {
+      transform-origin: 200px 258px;
+      animation: lipSync 0.22s infinite alternate;
     }
 
-    /* Efek Cahaya Dasar Proyektor */
-    @keyframes basePulse {
-      0%, 100% { transform: scaleX(1); opacity: 0.7; }
-      50% { transform: scaleX(1.12); opacity: 1; }
+    /* Styling Markdown di Panel Output Bawah */
+    .doc-content h1, .doc-content h2, .doc-content h3 {
+      color: #67e8f9;
+      font-weight: 700;
+      margin-top: 0.75rem;
+      margin-bottom: 0.35rem;
     }
-    .projector-base {
-      animation: basePulse 3s ease-in-out infinite;
+    .doc-content h2 { font-size: 1.05rem; border-bottom: 1px solid rgba(34,211,238,0.25); padding-bottom: 2px; }
+    .doc-content h3 { font-size: 0.95rem; }
+    .doc-content p { margin-bottom: 0.5rem; line-height: 1.5; }
+    .doc-content ul, .doc-content ol { margin-left: 1.25rem; margin-bottom: 0.5rem; list-style-type: disc; }
+    .doc-content ol { list-style-type: decimal; }
+    .doc-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6rem 0;
+      font-size: 0.8rem;
     }
+    .doc-content th, .doc-content td {
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .doc-content th {
+      background-color: rgba(6, 182, 212, 0.2);
+      color: #a5f3fc;
+    }
+    .doc-content strong { color: #e0f2fe; }
+    .doc-content blockquote {
+      border-left: 3px solid #22d3ee;
+      padding-left: 0.75rem;
+      color: #94a3b8;
+      font-style: italic;
+      margin: 0.5rem 0;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.4); border-radius: 9999px; }
   </style>
 </head>
-<body class="text-cyan-100 min-h-screen flex flex-col items-center justify-center p-4 font-sans select-none">
+<body class="text-cyan-50 flex flex-col justify-between relative select-none">
 
-  <div class="max-w-md w-full bg-slate-950/70 backdrop-blur-md rounded-3xl shadow-[0_0_50px_rgba(6,182,212,0.2)] p-6 border border-cyan-500/30 flex flex-col items-center relative overflow-hidden">
-    
-    <!-- Overlay Scanlines -->
-    <div class="scanlines absolute inset-0 pointer-events-none z-10"></div>
+  <!-- Scanline Overlay -->
+  <div class="scanlines fixed inset-0 pointer-events-none z-10"></div>
 
-    <!-- Header -->
-    <div class="text-center z-20 mb-2">
-      <span class="text-[10px] uppercase tracking-[0.3em] text-cyan-400 font-semibold">Neural Holographic Interface</span>
-      <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-400">HOLO-AI ASSISTANT</h1>
-      <p id="status" class="text-xs text-cyan-300/80 mt-1 h-4">Sistem siap. Sentuh mikrofon untuk berbicara.</p>
+  <!-- Top Bar Minimalis -->
+  <header class="w-full px-5 py-3 flex items-center justify-between z-20">
+    <div class="flex items-center gap-2.5">
+      <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></span>
+      <div>
+        <h1 class="text-xs font-bold tracking-[0.25em] text-cyan-300 uppercase">AI AGENT HOLOGRAM</h1>
+        <p id="status-text" class="text-[11px] text-cyan-400/75">Siaga — Sentuh mikrofon untuk memberi perintah</p>
+      </div>
     </div>
 
-    <!-- Kanvas Avatar Manusia Hologram -->
-    <div class="relative w-72 h-72 flex items-center justify-center my-2 z-20">
-      <svg id="holo-svg" viewBox="0 0 300 300" class="w-full h-full hologram-float holo-flicker drop-shadow-[0_0_15px_rgba(34,211,238,0.65)]">
+    <div class="flex items-center gap-2">
+      <!-- Tombol Buka/Tutup Panel Dokumen Manual -->
+      <button id="toggle-doc-btn" class="hidden text-[11px] bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-lg transition">
+        Tampilkan Hasil
+      </button>
+      <!-- Tombol Fullscreen -->
+      <button id="fullscreen-btn" title="Layar Penuh" class="p-2 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-cyan-500/30 text-cyan-300 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Area Utama: Wajah Hologram Fullscreen -->
+  <main id="face-stage" class="flex-1 flex flex-col items-center justify-center relative z-20 transition-all duration-500 px-4">
+    <div class="w-full max-w-[380px] sm:max-w-[440px] aspect-square flex items-center justify-center relative">
+      <svg id="holo-face-svg" viewBox="0 0 400 400" class="w-full h-full drop-shadow-[0_0_22px_rgba(34,211,238,0.65)] transition-all duration-300">
         <defs>
-          <!-- Gradien Tubuh Hologram -->
-          <linearGradient id="holoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" id="grad-top" stop-color="#22d3ee" stop-opacity="0.85" />
-            <stop offset="70%" id="grad-mid" stop-color="#0284c7" stop-opacity="0.45" />
-            <stop offset="100%" id="grad-bot" stop-color="#0284c7" stop-opacity="0.0" />
+          <!-- Gradien Wajah Hologram -->
+          <linearGradient id="faceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" id="c-top" stop-color="#67e8f9" stop-opacity="0.85" />
+            <stop offset="55%" id="c-mid" stop-color="#06b6d4" stop-opacity="0.35" />
+            <stop offset="100%" id="c-bot" stop-color="#0284c7" stop-opacity="0.1" />
           </linearGradient>
 
-          <!-- Gradien Cahaya Mata -->
-          <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+          <!-- Cahaya Mata -->
+          <radialGradient id="irisGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stop-color="#ffffff" />
-            <stop offset="60%" stop-color="#67e8f9" />
+            <stop offset="45%" stop-color="#a5f3fc" />
+            <stop offset="85%" stop-color="#06b6d4" stop-opacity="0.6" />
             <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
           </radialGradient>
         </defs>
 
-        <!-- Cincin Energi Latar -->
-        <circle cx="150" cy="150" r="125" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="12 8 3 8" class="text-cyan-400/40 ring-spin" />
-        <circle cx="150" cy="150" r="108" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="40 15 5 15" class="text-cyan-300/30 ring-spin-reverse" />
+        <!-- Bingkai HUD Lingkaran Luar -->
+        <circle cx="200" cy="200" r="182" fill="none" stroke="#22d3ee" stroke-width="0.8" stroke-dasharray="18 10 4 10" opacity="0.35" class="ring-cw" />
+        <circle cx="200" cy="200" r="164" fill="none" stroke="#67e8f9" stroke-width="1.2" stroke-dasharray="55 20 8 20" opacity="0.25" class="ring-ccw" />
 
-        <!-- Siluet Bahu & Leher Manusia Hologram -->
-        <path d="M 65 275 C 70 230, 105 215, 130 210 L 132 192 L 168 192 L 170 210 C 195 215, 230 230, 235 275 Z" 
-              fill="url(#holoGrad)" stroke="#67e8f9" stroke-width="1.2" stroke-opacity="0.6" />
-        
-        <!-- Garis Sirkuit Dada -->
-        <path d="M 110 235 L 135 250 L 165 250 L 190 235 M 150 212 L 150 265" 
-              fill="none" stroke="#a5f3fc" stroke-width="1" stroke-opacity="0.5" />
+        <!-- Grup Wajah Hologram (Hanya bergerak aktif saat merespon suara) -->
+        <g id="face-rig">
+          <!-- Kontur Luar Wajah (Close-Up Head Only) -->
+          <path d="M 122 165 
+                   C 122 88, 278 88, 278 165 
+                   C 278 228, 252 292, 200 302 
+                   C 148 292, 122 228, 122 165 Z" 
+                fill="url(#faceGrad)" stroke="#67e8f9" stroke-width="1.8" />
 
-        <!-- Grup Kepala (Bisa bergerak sedikit) -->
-        <g id="holo-head" class="transition-transform duration-500">
-          <!-- Bentuk Kepala Manusia -->
-          <path d="M 108 115 C 108 72, 192 72, 192 115 C 192 155, 174 195, 150 198 C 126 195, 108 155, 108 115 Z" 
-                fill="url(#holoGrad)" stroke="#67e8f9" stroke-width="1.5" />
+          <!-- Jaring Geometri Dahi & Pelipis (Efek Hologram Digital) -->
+          <path d="M 136 145 C 155 112, 245 112, 264 145" fill="none" stroke="#cffafe" stroke-width="0.9" stroke-dasharray="5 5" opacity="0.6" />
+          <path d="M 200 105 L 200 138 M 165 114 L 175 142 M 235 114 L 225 142" fill="none" stroke="#a5f3fc" stroke-width="0.7" opacity="0.45" />
 
-          <!-- Garis Kontur Wajah Futuristik -->
-          <path d="M 116 115 C 116 82, 184 82, 184 115" fill="none" stroke="#cffafe" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.7" />
-          <path d="M 122 155 L 134 178 M 178 155 L 166 178" fill="none" stroke="#67e8f9" stroke-width="0.8" opacity="0.5" />
+          <!-- Garis Struktur Tulang Pipi & Rahang -->
+          <path d="M 126 192 L 154 226 L 172 276" fill="none" stroke="#67e8f9" stroke-width="0.9" opacity="0.55" />
+          <path d="M 274 192 L 246 226 L 228 276" fill="none" stroke="#67e8f9" stroke-width="0.9" opacity="0.55" />
+          <path d="M 162 282 Q 200 295 238 282" fill="none" stroke="#a5f3fc" stroke-width="1" opacity="0.6" />
 
-          <!-- Alis Hologram -->
-          <path id="brow-left" d="M 122 116 Q 133 111 142 116" fill="none" stroke="#cffafe" stroke-width="2" stroke-linecap="round" />
-          <path id="brow-right" d="M 158 116 Q 167 111 178 116" fill="none" stroke="#cffafe" stroke-width="2" stroke-linecap="round" />
+          <!-- Alis Ekspresif -->
+          <path id="brow-l" d="M 144 166 Q 164 156 184 166" fill="none" stroke="#e0f2fe" stroke-width="2.6" stroke-linecap="round" class="transition-transform duration-300" />
+          <path id="brow-r" d="M 216 166 Q 236 156 256 166" fill="none" stroke="#e0f2fe" stroke-width="2.6" stroke-linecap="round" class="transition-transform duration-300" />
 
           <!-- Mata Kiri -->
-          <g id="eye-left" class="eyelid" style="transform-origin: 132px 127px;">
-            <ellipse cx="132" cy="127" rx="9" ry="5.5" fill="url(#eyeGlow)" />
-            <circle cx="132" cy="127" r="2.8" fill="#ffffff" />
+          <g id="eye-l" class="eyelid" style="transform-origin: 164px 184px;">
+            <path d="M 146 184 Q 164 172 182 184 Q 164 195 146 184 Z" fill="rgba(6, 182, 212, 0.25)" stroke="#a5f3fc" stroke-width="1.3" />
+            <circle cx="164" cy="184" r="9" fill="url(#irisGlow)" />
+            <circle cx="164" cy="184" r="3.5" fill="#ffffff" />
           </g>
 
           <!-- Mata Kanan -->
-          <g id="eye-right" class="eyelid" style="transform-origin: 168px 127px;">
-            <ellipse cx="168" cy="127" rx="9" ry="5.5" fill="url(#eyeGlow)" />
-            <circle cx="168" cy="127" r="2.8" fill="#ffffff" />
+          <g id="eye-r" class="eyelid" style="transform-origin: 236px 184px;">
+            <path d="M 218 184 Q 236 172 254 184 Q 236 195 218 184 Z" fill="rgba(6, 182, 212, 0.25)" stroke="#a5f3fc" stroke-width="1.3" />
+            <circle cx="236" cy="184" r="9" fill="url(#irisGlow)" />
+            <circle cx="236" cy="184" r="3.5" fill="#ffffff" />
           </g>
 
-          <!-- Garis Hidung Halus -->
-          <path d="M 150 128 L 147 152 L 153 154" fill="none" stroke="#a5f3fc" stroke-width="1.2" stroke-linecap="round" opacity="0.75" />
+          <!-- Batang & Ujung Hidung Hologram -->
+          <path d="M 200 182 L 194 222 L 200 226 L 206 222" fill="none" stroke="#cffafe" stroke-width="1.4" stroke-linecap="round" opacity="0.8" />
 
-          <!-- Mulut Hologram (Bergerak saat bicara) -->
-          <g id="holo-mouth">
+          <!-- Area Mulut & Gelombang Suara -->
+          <g id="mouth-group">
             <!-- Bibir Atas -->
-            <path d="M 137 168 Q 144 165 150 167 Q 156 165 163 168" fill="none" stroke="#cffafe" stroke-width="1.8" stroke-linecap="round" />
-            <!-- Rongga Suara Dinamis -->
-            <ellipse id="mouth-cavity" cx="150" cy="171" rx="10" ry="1.5" fill="#a5f3fc" opacity="0.85" />
+            <path d="M 176 252 Q 190 247 200 250 Q 210 247 224 252" fill="none" stroke="#e0f2fe" stroke-width="2" stroke-linecap="round" />
+            <!-- Inti Suara / Bukaan Bibir Saat Bicara -->
+            <ellipse id="mouth-core" cx="200" cy="256" rx="18" ry="1.8" fill="#a5f3fc" opacity="0.9" />
             <!-- Bibir Bawah -->
-            <path d="M 140 173 Q 150 177 160 173" fill="none" stroke="#67e8f9" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M 181 261 Q 200 268 219 261" fill="none" stroke="#67e8f9" stroke-width="1.6" stroke-linecap="round" />
           </g>
         </g>
-
-        <!-- Sinar Proyektor dari Bawah -->
-        <polygon points="105,292 195,292 230,260 70,260" fill="url(#holoGrad)" opacity="0.25" />
       </svg>
-
-      <!-- Basis Proyektor Hologram -->
-      <div id="projector-glow" class="projector-base absolute bottom-1 w-44 h-3 rounded-full bg-cyan-400/50 blur-md"></div>
-      <div class="absolute bottom-2 w-36 h-1.5 rounded-full bg-cyan-200 shadow-[0_0_15px_#22d3ee]"></div>
     </div>
 
-    <!-- Tombol Kontrol Mikrofon -->
-    <button id="mic-btn" class="z-20 bg-cyan-600/80 hover:bg-cyan-500 text-white font-semibold py-3 px-7 rounded-full border border-cyan-300/50 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 flex items-center gap-2.5 mb-5">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+    <!-- Subtitle Singkat Ucapan User (Hanya muncul sekilas saat bicara) -->
+    <div id="live-transcript" class="h-6 text-center text-xs text-cyan-200/80 italic max-w-md truncate px-4"></div>
+  </main>
+
+  <!-- Panel Dokumen Terstruktur (Tersembunyi secara default, muncul HANYA saat diperintahkan membuat rekapan/info terstruktur/template) -->
+  <section id="document-panel" class="hidden z-30 w-full max-w-3xl mx-auto px-4 pb-3 transition-all duration-300">
+    <div class="bg-slate-950/95 backdrop-blur-xl border border-cyan-400/40 rounded-2xl shadow-[0_-10px_40px_rgba(6,182,212,0.25)] flex flex-col max-h-[44dvh]">
+      <!-- Header Panel Dokumen -->
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-cyan-500/25 bg-cyan-950/40 rounded-t-2xl">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="doc-title" class="text-xs font-bold tracking-wider text-cyan-200 uppercase">Dokumen Kerja AI Agent</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="copy-doc-btn" class="text-[11px] bg-cyan-600/30 hover:bg-cyan-500/50 text-cyan-100 border border-cyan-400/30 px-2.5 py-1 rounded-md transition">
+            Salin
+          </button>
+          <button id="download-doc-btn" class="text-[11px] bg-emerald-600/30 hover:bg-emerald-500/50 text-emerald-100 border border-emerald-400/30 px-2.5 py-1 rounded-md transition">
+            Unduh
+          </button>
+          <button id="close-doc-btn" title="Tutup Panel" class="text-slate-400 hover:text-white p-1 ml-1">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Isi Konten Terstruktur -->
+      <div id="doc-body" class="doc-content p-4 overflow-y-auto text-sm text-slate-200 select-text"></div>
+    </div>
+  </section>
+
+  <!-- Kontrol Bawah (Tombol Mikrofon Utama) -->
+  <footer class="w-full py-4 px-4 flex flex-col items-center justify-center z-30">
+    <button id="mic-btn" class="group relative flex items-center justify-center gap-3 bg-cyan-500/20 hover:bg-cyan-500/30 active:scale-95 text-cyan-100 border border-cyan-400/60 px-7 py-3.5 rounded-full shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all duration-200">
+      <span id="mic-ping" class="hidden absolute inset-0 rounded-full border-2 border-rose-400 animate-ping opacity-50"></span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-300" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
       </svg>
-      <span id="btn-text">Aktifkan Suara</span>
+      <span id="mic-label" class="text-sm font-semibold tracking-wide">Bicara dengan AI Agent</span>
     </button>
-
-    <!-- Terminal Log Percakapan -->
-    <div class="z-20 w-full bg-slate-900/90 rounded-2xl p-3.5 h-36 overflow-y-auto text-xs space-y-2.5 border border-cyan-500/20 font-mono" id="chat-box">
-      <div class="text-cyan-500/60 text-center italic">[ Terminal Transmisi Siap ]</div>
-    </div>
-  </div>
+  </footer>
 
   <script>
     // ==========================================
-    // KONFIGURASI API KEY & KARAKTER HOLOGRAM
+    // KONFIGURASI API KEY & OTAK AI AGENT
     // ==========================================
-    const GEMINI_API_KEY = ""; 
-    const SYSTEM_PROMPT = "Kamu adalah asisten AI hologram futuristik yang ramah, cerdas, dan ekspresif seperti manusia. Jawablah dalam bahasa Indonesia yang natural, singkat, padat, dan jelas agar enak didengar saat diucapkan. Jangan gunakan tanda baca markdown seperti bintang atau pagar.";
+    const GEMINI_API_KEY = "MASUKKAN_API_KEY_GEMINI_ANDA_DI_SINI";
 
-    // Elemen UI & Hologram
+    const SYSTEM_PROMPT = `Kamu adalah AI Agent Hologram profesional untuk komunikasi suara dan asisten kerja.
+Aturan respons wajib dalam format JSON murni tanpa markdown block:
+{
+  "spoken_reply": "Kalimat jawaban lisan dalam bahasa Indonesia yang natural, ramah, jelas, tanpa simbol aneh, maksimal 2-3 kalimat.",
+  "show_document": true atau false,
+  "document_title": "Judul singkat dokumen jika show_document true",
+  "document_markdown": "Isi lengkap dalam format Markdown rapi (gunakan heading, poin, tabel, atau referensi sumber jika relevan) jika show_document true, atau string kosong jika false."
+}
+
+Kapan harus mengisi "show_document": true?
+HANYA ketika pengguna secara eksplisit meminta:
+1. Membuat rekapan pekerjaan / laporan / ringkasan kegiatan.
+2. Memberikan informasi mendalam secara terstruktur lengkap dengan referensi / dasar aturan / langkah-langkah.
+3. Membuat template pekerjaan (contoh: template surat dinas, SOP, tabel jadwal, format laporan, draf email, checklist kerja).
+
+Jika pengguna hanya menyapa, mengobrol biasa, atau bertanya singkat yang cukup dijawab lisan, set "show_document": false dan kosongkan "document_markdown".`;
+
+    // ==========================================
+    // REFERENSI ELEMEN DOM
+    // ==========================================
+    const faceRig = document.getElementById('face-rig');
+    const holoSvg = document.getElementById('holo-face-svg');
+    const mouthCore = document.getElementById('mouth-core');
+    const eyeL = document.getElementById('eye-l');
+    const eyeR = document.getElementById('eye-r');
+    const browL = document.getElementById('brow-l');
+    const browR = document.getElementById('brow-r');
+    const cTop = document.getElementById('c-top');
+    const cMid = document.getElementById('c-mid');
+
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const liveTranscript = document.getElementById('live-transcript');
     const micBtn = document.getElementById('mic-btn');
-    const btnText = document.getElementById('btn-text');
-    const statusText = document.getElementById('status');
-    const chatBox = document.getElementById('chat-box');
-    
-    const holoSvg = document.getElementById('holo-svg');
-    const holoHead = document.getElementById('holo-head');
-    const mouthCavity = document.getElementById('mouth-cavity');
-    const eyeLeft = document.getElementById('eye-left');
-    const eyeRight = document.getElementById('eye-right');
-    const gradTop = document.getElementById('grad-top');
-    const gradMid = document.getElementById('grad-mid');
-    const projectorGlow = document.getElementById('projector-glow');
+    const micLabel = document.getElementById('mic-label');
+    const micPing = document.getElementById('mic-ping');
+
+    const docPanel = document.getElementById('document-panel');
+    const docTitle = document.getElementById('doc-title');
+    const docBody = document.getElementById('doc-body');
+    const toggleDocBtn = document.getElementById('toggle-doc-btn');
+    const closeDocBtn = document.getElementById('close-doc-btn');
+    const copyDocBtn = document.getElementById('copy-doc-btn');
+    const downloadDocBtn = document.getElementById('download-doc-btn');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+    let rawMarkdownContent = "";
+    let currentDocTitle = "Dokumen_AI_Agent";
+    let isSpeaking = false;
 
     // ==========================================
-    // ANIMASI HIDUP HOLOGRAM (KEDIP & GERAK KEPALA)
+    // KONTROL ANIMASI WAJAH HOLOGRAM
+    // (Diam tenang saat idle, bergerak aktif HANYA saat merespon suara)
     // ==========================================
-    // Kedip mata alami setiap beberapa detik
-    function triggerBlink() {
-      eyeLeft.classList.add('blink');
-      eyeRight.classList.add('blink');
-      setTimeout(() => {
-        eyeLeft.classList.remove('blink');
-        eyeRight.classList.remove('blink');
-      }, 140);
-
-      const nextBlink = Math.random() * 4000 + 2000; // 2 - 6 detik
-      setTimeout(triggerBlink, nextBlink);
-    }
-    setTimeout(triggerBlink, 2000);
-
-    // Gerakan kepala halus seperti manusia memperhatikan
-    setInterval(() => {
-      const randomX = (Math.random() - 0.5) * 6;
-      const randomY = (Math.random() - 0.5) * 4;
-      const randomRot = (Math.random() - 0.5) * 3;
-      holoHead.style.transform = `translate(${randomX}px, ${randomY}px) rotate(${randomRot}deg)`;
-    }, 2800);
-
-    // Ubah Tema Warna Aura Hologram sesuai Status
-    function setHoloState(state) {
-      if (state === 'listening') {
-        // Merah / Magenta saat mendengarkan
-        gradTop.setAttribute('stop-color', '#f43f5e');
-        gradMid.setAttribute('stop-color', '#e11d48');
-        holoSvg.style.filter = 'drop-shadow(0 0 18px rgba(244, 63, 94, 0.8))';
-        projectorGlow.className = 'projector-base absolute bottom-1 w-44 h-3 rounded-full bg-rose-500/60 blur-md';
-        mouthCavity.classList.remove('talking-mouth');
-        mouthCavity.setAttribute('ry', '1.5');
-      } else if (state === 'thinking') {
-        // Emas / Amber saat berpikir
-        gradTop.setAttribute('stop-color', '#fbbf24');
-        gradMid.setAttribute('stop-color', '#d97706');
-        holoSvg.style.filter = 'drop-shadow(0 0 18px rgba(251, 191, 36, 0.8))';
-        projectorGlow.className = 'projector-base absolute bottom-1 w-44 h-3 rounded-full bg-amber-400/60 blur-md';
-        mouthCavity.classList.remove('talking-mouth');
-      } else if (state === 'speaking') {
-        // Hijau Zamrud / Cyan Terang saat bicara + Aktifkan Mulut
-        gradTop.setAttribute('stop-color', '#34d399');
-        gradMid.setAttribute('stop-color', '#059669');
-        holoSvg.style.filter = 'drop-shadow(0 0 20px rgba(52, 211, 153, 0.85))';
-        projectorGlow.className = 'projector-base absolute bottom-1 w-44 h-3 rounded-full bg-emerald-400/70 blur-md';
-        mouthCavity.setAttribute('ry', '5');
-        mouthCavity.classList.add('talking-mouth');
+    function setAgentMode(mode) {
+      if (mode === 'listening') {
+        // Mendengarkan suara user: Wajah aktif memperhatikan, alis sedikit terangkat, aura merah-magenta
+        faceRig.classList.add('face-active');
+        browL.style.transform = 'translateY(-3px)';
+        browR.style.transform = 'translateY(-3px)';
+        cTop.setAttribute('stop-color', '#fb7185');
+        cMid.setAttribute('stop-color', '#e11d48');
+        holoSvg.style.filter = 'drop-shadow(0 0 24px rgba(244, 63, 94, 0.75))';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
+        mouthCore.classList.remove('lip-talking');
+        mouthCore.setAttribute('ry', '1.8');
+        micPing.classList.remove('hidden');
+      } else if (mode === 'thinking') {
+        // Memproses perintah: Wajah tetap aktif, aura kuning-emas
+        faceRig.classList.add('face-active');
+        browL.style.transform = 'translateY(1px)';
+        browR.style.transform = 'translateY(-2px)';
+        cTop.setAttribute('stop-color', '#fcd34d');
+        cMid.setAttribute('stop-color', '#d97706');
+        holoSvg.style.filter = 'drop-shadow(0 0 24px rgba(251, 191, 36, 0.75))';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+        mouthCore.classList.remove('lip-talking');
+        micPing.classList.add('hidden');
+      } else if (mode === 'speaking') {
+        // Berbicara menjawab user: Wajah bergerak ekspresif + bibir bergerak sinkron, aura hijau-cyan
+        faceRig.classList.add('face-active');
+        browL.style.transform = 'translateY(-1px)';
+        browR.style.transform = 'translateY(-1px)';
+        cTop.setAttribute('stop-color', '#6ee7b7');
+        cMid.setAttribute('stop-color', '#059669');
+        holoSvg.style.filter = 'drop-shadow(0 0 26px rgba(52, 211, 153, 0.85))';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]';
+        mouthCore.setAttribute('ry', '6');
+        mouthCore.classList.add('lip-talking');
+        micPing.classList.add('hidden');
       } else {
-        // Standby (Cyan Hologram Klasik)
-        gradTop.setAttribute('stop-color', '#22d3ee');
-        gradMid.setAttribute('stop-color', '#0284c7');
-        holoSvg.style.filter = 'drop-shadow(0 0 15px rgba(34, 211, 238, 0.65))';
-        projectorGlow.className = 'projector-base absolute bottom-1 w-44 h-3 rounded-full bg-cyan-400/50 blur-md';
-        mouthCavity.classList.remove('talking-mouth');
-        mouthCavity.setAttribute('ry', '1.5');
+        // Idle / Siaga: Wajah diam tenang (tidak bergerak), hanya kedip mata halus sesekali
+        faceRig.classList.remove('face-active');
+        browL.style.transform = 'translateY(0px)';
+        browR.style.transform = 'translateY(0px)';
+        cTop.setAttribute('stop-color', '#67e8f9');
+        cMid.setAttribute('stop-color', '#06b6d4');
+        holoSvg.style.filter = 'drop-shadow(0 0 20px rgba(34, 211, 238, 0.6))';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]';
+        mouthCore.classList.remove('lip-talking');
+        mouthCore.setAttribute('ry', '1.8');
+        micPing.classList.add('hidden');
       }
     }
 
+    // Kedip mata natural ringan
+    function naturalBlink() {
+      eyeL.classList.add('blink');
+      eyeR.classList.add('blink');
+      setTimeout(() => {
+        eyeL.classList.remove('blink');
+        eyeR.classList.remove('blink');
+      }, 120);
+      setTimeout(naturalBlink, Math.random() * 4500 + 2500);
+    }
+    setTimeout(naturalBlink, 2500);
+
     // ==========================================
-    // SPEECH RECOGNITION (PENDENGARAN)
+    // FITUR FULLSCREEN LAYAR HP & LAPTOP
+    // ==========================================
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // ==========================================
+    // KONTROL PANEL DOKUMEN BAWAH
+    // ==========================================
+    function showDocumentPanel(title, markdownText) {
+      currentDocTitle = title || "Dokumen Kerja AI Agent";
+      rawMarkdownContent = markdownText;
+      docTitle.textContent = currentDocTitle;
+      docBody.innerHTML = marked.parse(markdownText);
+      docPanel.classList.remove('hidden');
+      toggleDocBtn.classList.add('hidden');
+    }
+
+    closeDocBtn.addEventListener('click', () => {
+      docPanel.classList.add('hidden');
+      if (rawMarkdownContent) {
+        toggleDocBtn.classList.remove('hidden');
+      }
+    });
+
+    toggleDocBtn.addEventListener('click', () => {
+      docPanel.classList.remove('hidden');
+      toggleDocBtn.classList.add('hidden');
+    });
+
+    copyDocBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(rawMarkdownContent);
+      copyDocBtn.textContent = "Tersalin!";
+      setTimeout(() => copyDocBtn.textContent = "Salin", 2000);
+    });
+
+    downloadDocBtn.addEventListener('click', () => {
+      const blob = new Blob([rawMarkdownContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentDocTitle.replace(/\s+/g, '_')}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ==========================================
+    // SPEECH RECOGNITION (PENDENGARAN PERINTAH)
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
-    let isSpeaking = false;
 
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
       recognition.lang = 'id-ID';
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        statusText.textContent = "Hologram mendengarkan Anda...";
-        btnText.textContent = "Mendengarkan...";
-        setHoloState('listening');
+        statusText.textContent = "Mendengarkan perintah Anda...";
+        micLabel.textContent = "Mendengarkan...";
+        liveTranscript.textContent = "";
+        setAgentMode('listening');
       };
 
       recognition.onresult = async (event) => {
-        const userSpeech = event.results[0][0].transcript;
-        appendMessage("ANDA", userSpeech, "text-cyan-300");
-        statusText.textContent = "Memproses jaringan saraf AI...";
-        setHoloState('thinking');
+        const transcript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('');
         
-        await askGemini(userSpeech);
+        liveTranscript.textContent = `"${transcript}"`;
+
+        if (event.results[0].isFinal) {
+          statusText.textContent = "Menganalisis perintah...";
+          micLabel.textContent = "Memproses...";
+          setAgentMode('thinking');
+          await processAgentCommand(transcript);
+        }
       };
 
       recognition.onerror = (event) => {
-        statusText.textContent = "Sinyal terganggu (" + event.error + "). Coba lagi.";
-        resetUI();
+        statusText.textContent = "Suara tidak terdeteksi (" + event.error + ")";
+        resetToIdle();
       };
 
       recognition.onend = () => {
-        if (!isSpeaking) {
-          resetUI();
+        if (!isSpeaking && statusText.textContent === "Mendengarkan perintah Anda...") {
+          resetToIdle();
         }
       };
     } else {
-      statusText.textContent = "Browser tidak mendukung sensor suara. Gunakan Google Chrome.";
+      statusText.textContent = "Gunakan Google Chrome untuk fitur suara.";
       micBtn.disabled = true;
     }
 
@@ -338,13 +500,12 @@
     });
 
     // ==========================================
-    // KOMUNIKASI DENGAN GEMINI AI
+    // PEMROSESAN AI AGENT (GEMINI JSON MODE)
     // ==========================================
-    async function askGemini(prompt) {
+    async function processAgentCommand(userPrompt) {
       if (GEMINI_API_KEY === "MASUKKAN_API_KEY_GEMINI_ANDA_DI_SINI" || !GEMINI_API_KEY) {
-        const errorMsg = "API Key Gemini belum dimasukkan ke dalam sistem.";
-        appendMessage("HOLO-AI", errorMsg, "text-rose-400");
-        speak(errorMsg);
+        const msg = "Silakan masukkan API Key Gemini Anda di dalam kode terlebih dahulu.";
+        speakReply(msg);
         return;
       }
 
@@ -354,65 +515,64 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ parts: [{ text: prompt }] }]
+            contents: [{ parts: [{ text: userPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
           })
         });
 
         const data = await response.json();
-        const aiReply = data.candidates[0].content.parts[0].text;
-        
-        appendMessage("HOLO-AI", aiReply, "text-emerald-300");
-        speak(aiReply);
+        const rawJson = data.candidates[0].content.parts[0].text;
+        const parsed = JSON.parse(rawJson);
+
+        // Jika perintah meminta rekapan, informasi terstruktur, atau template -> tampilkan panel bawah
+        if (parsed.show_document && parsed.document_markdown) {
+          showDocumentPanel(parsed.document_title, parsed.document_markdown);
+        }
+
+        // Ucapkan jawaban lisan dengan gerakan wajah hologram
+        speakReply(parsed.spoken_reply || "Perintah telah selesai diproses.");
+
       } catch (error) {
-        const failMsg = "Koneksi ke pusat data terputus.";
-        appendMessage("HOLO-AI", failMsg, "text-rose-400");
-        speak(failMsg);
+        console.error(error);
+        speakReply("Maaf, terjadi gangguan saat memproses perintah Anda.");
       }
     }
 
     // ==========================================
-    // TEXT-TO-SPEECH (SUARA & GERAK BIBIR)
+    // TEXT-TO-SPEECH & SINKRONISASI GERAK WAJAH
     // ==========================================
-    function speak(text) {
+    function speakReply(text) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
       utterance.rate = 1.02;
-      utterance.pitch = 1.05;
+      utterance.pitch = 1.02;
 
       utterance.onstart = () => {
         isSpeaking = true;
-        statusText.textContent = "Hologram sedang berbicara...";
-        btnText.textContent = "Interupsi Suara";
-        setHoloState('speaking');
+        statusText.textContent = "AI Agent sedang menjawab...";
+        micLabel.textContent = "Interupsi Suara";
+        setAgentMode('speaking');
       };
 
       utterance.onend = () => {
         isSpeaking = false;
-        resetUI();
+        resetToIdle();
       };
 
       utterance.onerror = () => {
         isSpeaking = false;
-        resetUI();
+        resetToIdle();
       };
 
       window.speechSynthesis.speak(utterance);
     }
 
-    function appendMessage(sender, text, colorClass) {
-      if (chatBox.children[0]?.classList.contains('italic')) {
-        chatBox.innerHTML = '';
-      }
-      const msgDiv = document.createElement('div');
-      msgDiv.innerHTML = `<span class="font-bold ${colorClass}">[${sender}]:</span> <span class="text-slate-200">${text}</span>`;
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function resetUI() {
-      statusText.textContent = "Sistem siap. Sentuh mikrofon untuk berbicara.";
-      btnText.textContent = "Aktifkan Suara";
-      setHoloState('standby');
+    function resetToIdle() {
+      statusText.textContent = "Siaga — Sentuh mikrofon untuk memberi perintah";
+      micLabel.textContent = "Bicara dengan AI Agent";
+      setAgentMode('idle');
     }
   </script>
 </body>
