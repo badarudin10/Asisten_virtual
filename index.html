@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asisten Robot AI Virtual</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+    .listening {
+      animation: pulse-ring 1.5s infinite;
+      background-color: #ef4444 !important;
+    }
+    .speaking {
+      animation: pulse-ring 1s infinite;
+      background-color: #10b981 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+
+  <div class="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl p-6 border border-slate-700 flex flex-col items-center">
+    <h1 class="text-2xl font-bold text-blue-400 mb-1">Robot AI Virtual</h1>
+    <p id="status" class="text-sm text-slate-400 mb-8 text-center">Tekan tombol mikrofon untuk mulai berbicara</p>
+
+    <!-- Avatar / Visual Robot -->
+    <div id="robot-avatar" class="w-32 h-32 rounded-full bg-blue-600 flex items-center justify-center shadow-lg transition-all duration-300 mb-8">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    </div>
+
+    <!-- Tombol Kontrol -->
+    <button id="mic-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-full shadow-md transition flex items-center gap-2 mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+      </svg>
+      <span id="btn-text">Mulai Bicara</span>
+    </button>
+
+    <!-- Area Log Percakapan -->
+    <div class="w-full bg-slate-900 rounded-xl p-4 h-48 overflow-y-auto text-sm space-y-3 border border-slate-700" id="chat-box">
+      <div class="text-slate-400 italic text-center">Riwayat percakapan akan muncul di sini...</div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // KONFIGURASI API KEY & KARAKTER ROBOT
+    // ==========================================
+    const GEMINI_API_KEY = ""; 
+    const SYSTEM_PROMPT = "Kamu adalah asisten robot AI virtual yang ramah, cerdas, dan membantu. Jawablah setiap pertanyaan dengan bahasa Indonesia yang natural, singkat, jelas, dan enak didengar saat dibacakan dengan suara. Hindari penggunaan simbol markdown seperti bintang (*) atau pagar (#).";
+
+    // Elemen UI
+    const micBtn = document.getElementById('mic-btn');
+    const btnText = document.getElementById('btn-text');
+    const statusText = document.getElementById('status');
+    const avatar = document.getElementById('robot-avatar');
+    const chatBox = document.getElementById('chat-box');
+
+    // Inisialisasi Speech Recognition (Pendengaran)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'id-ID';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        statusText.textContent = "Mendengarkan suara Anda...";
+        btnText.textContent = "Mendengarkan...";
+        avatar.classList.add('listening');
+        avatar.classList.remove('speaking');
+      };
+
+      recognition.onresult = async (event) => {
+        const userSpeech = event.results[0][0].transcript;
+        appendMessage("Anda", userSpeech, "text-blue-300");
+        statusText.textContent = "Sedang berpikir...";
+        avatar.classList.remove('listening');
+        
+        await askGemini(userSpeech);
+      };
+
+      recognition.onerror = (event) => {
+        statusText.textContent = "Error: " + event.error + ". Coba lagi.";
+        resetUI();
+      };
+
+      recognition.onend = () => {
+        if (!avatar.classList.contains('speaking')) {
+          resetUI();
+        }
+      };
+    } else {
+      statusText.textContent = "Browser Anda tidak mendukung fitur pengenalan suara. Gunakan Google Chrome.";
+      micBtn.disabled = true;
+    }
+
+    // Event Tombol Mikrofon
+    micBtn.addEventListener('click', () => {
+      window.speechSynthesis.cancel(); // Hentikan suara robot jika sedang bicara
+      try {
+        recognition.start();
+      } catch (e) {
+        recognition.stop();
+      }
+    });
+
+    // Fungsi Mengirim Teks ke Gemini AI
+    async function askGemini(prompt) {
+      if (GEMINI_API_KEY === "MASUKKAN_API_KEY_GEMINI_ANDA_DI_SINI" || !GEMINI_API_KEY) {
+        const errorMsg = "Silakan masukkan API Key Gemini Anda di dalam kode terlebih dahulu.";
+        appendMessage("Robot AI", errorMsg, "text-red-400");
+        speak(errorMsg);
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+
+        const data = await response.json();
+        const aiReply = data.candidates[0].content.parts[0].text;
+        
+        appendMessage("Robot AI", aiReply, "text-emerald-300");
+        speak(aiReply);
+      } catch (error) {
+        const failMsg = "Maaf, terjadi gangguan koneksi ke server AI.";
+        appendMessage("Robot AI", failMsg, "text-red-400");
+        speak(failMsg);
+      }
+    }
+
+    // Fungsi Mengubah Teks Menjadi Suara (Text-to-Speech)
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.rate = 1.0;  // Kecepatan bicara (0.5 - 2.0)
+      utterance.pitch = 1.0; // Nada suara (0 - 2)
+
+      utterance.onstart = () => {
+        statusText.textContent = "Robot sedang menjawab...";
+        btnText.textContent = "Bicara Sekarang (Interupsi)";
+        avatar.classList.add('speaking');
+      };
+
+      utterance.onend = () => {
+        resetUI();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Fungsi Tambahan UI
+    function appendMessage(sender, text, colorClass) {
+      if (chatBox.children[0]?.classList.contains('italic')) {
+        chatBox.innerHTML = '';
+      }
+      const msgDiv = document.createElement('div');
+      msgDiv.innerHTML = `<span class="font-bold ${colorClass}">${sender}:</span> <span class="text-slate-200">${text}</span>`;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function resetUI() {
+      statusText.textContent = "Tekan tombol mikrofon untuk mulai berbicara";
+      btnText.textContent = "Mulai Bicara";
+      avatar.classList.remove('listening', 'speaking');
+    }
+  </script>
+</body>
+</html>
